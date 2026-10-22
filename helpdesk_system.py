@@ -4,9 +4,11 @@ import socket
 import json
 from datetime import datetime
 
+
 # Global state
 tickets = {}
 ADMIN_PASSWORD = os.environ.get("HELPDESK_ADMIN_PASSWORD")
+
 
 def raise_ticket(user, issue_type, urgency="3", audit_trail=None):
     """Create a helpdesk ticket and record its creation."""
@@ -25,9 +27,11 @@ def raise_ticket(user, issue_type, urgency="3", audit_trail=None):
     )
     return ticket_id
 
+
 def assign_ticket(ticket_id, technician):
     """Assign a technician to a ticket."""
     tickets[ticket_id]["tech"] = technician
+
 
 def add_note(ticket_id, note):
     """Add a note to an existing ticket."""
@@ -36,10 +40,12 @@ def add_note(ticket_id, note):
     else:
         print(f"Ticket #{ticket_id} not found.")
 
+
 def close_ticket(ticket_id, password):
     """Close a ticket after verifying the admin password."""
     if password == ADMIN_PASSWORD:
         del tickets[ticket_id]
+
 
 def unresolved_high_priority():
     """Return IDs of unassigned high-priority tickets."""
@@ -49,6 +55,7 @@ def unresolved_high_priority():
             result.append(ticket_id)
     return result
 
+
 def ping_user_machine(hostname):
     """Check whether a hostname resolves to an IP address."""
     try:
@@ -57,10 +64,12 @@ def ping_user_machine(hostname):
     except socket.gaierror:
         return 1
 
+
 def save_tickets(file="tickets.json"):
     """Save all tickets to a JSON file."""
     with open(file, "w", encoding="utf-8") as output_file:
         json.dump(tickets, output_file)
+
 
 def main():
     """Demonstrate helpdesk ticket operations."""
@@ -70,11 +79,15 @@ def main():
     assign_ticket(t1, "Tech-Kiran")
     add_note(999, "Called user")
     print("Unassigned high priority:", unresolved_high_priority())
-    level = input("Urgency for a new laptop ticket (1-5, Enter for 3): ") or "3"
+    level = (
+        input("Urgency for a new laptop ticket (1-5, Enter for 3): ")
+        or "3"
+    )
     raise_ticket("sana", "laptop", level)
     if ADMIN_PASSWORD:
         close_ticket(t3, ADMIN_PASSWORD)
     save_tickets()
     print("Open tickets:", list(tickets.keys()))
+
 
 main()
