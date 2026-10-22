@@ -14,11 +14,18 @@ def raise_ticket(user, issue_type, urgency="3", audit_trail=None):
     """Create a helpdesk ticket and record its creation."""
     if audit_trail is None:
         audit_trail = []
+    try:
+        urgency = int(urgency)
+    except (ValueError, TypeError) as exc:
+        raise ValueError("Urgency must be an integer from 1 to 5") from exc
+
+    if not 1 <= urgency <= 5:
+        raise ValueError("Urgency must be between 1 and 5")
     ticket_id = max(tickets.keys(), default=100) + 1
     tickets[ticket_id] = {
         "user": user,
         "issue": issue_type,
-        "priority": int(urgency),
+        "priority": urgency,
         "tech": None,
         "notes": []
     }
@@ -75,7 +82,7 @@ def main():
     """Demonstrate helpdesk ticket operations."""
     t1 = raise_ticket("anil", "printer", "5")
     raise_ticket("meera", "wifi", "4")
-    t3 = raise_ticket("joe", "vpn", "-7")
+    t3 = raise_ticket("joe", "vpn", "3")
     assign_ticket(t1, "Tech-Kiran")
     add_note(999, "Called user")
     print("Unassigned high priority:", unresolved_high_priority())
