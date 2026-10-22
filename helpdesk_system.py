@@ -1,3 +1,4 @@
+"""IT helpdesk ticket management system."""
 import os
 import socket
 import json
@@ -5,17 +6,27 @@ from datetime import datetime
 
 # Global state
 tickets = {}
-ticket_counter = 100
 ADMIN_PASSWORD = os.environ.get("HELPDESK_ADMIN_PASSWORD")
 
-def raise_ticket(user, issue_type, urgency="3", audit_trail=[]):
-    global ticket_counter
-    ticket_counter += 1
-    tickets[ticket_counter] = {"user": user, "issue": issue_type, "priority": int(urgency), "tech": None, "notes": []}
-    audit_trail.append("%s raised #%d at %s" % (user, ticket_counter, datetime.now()))
-    return ticket_counter
+def raise_ticket(user, issue_type, urgency="3", audit_trail=None):
+    """Create a helpdesk ticket and record its creation."""
+    if audit_trail is None:
+        audit_trail = []
+    ticket_id = max(tickets.keys(), default=100) + 1
+    tickets[ticket_id] = {
+        "user": user,
+        "issue": issue_type,
+        "priority": int(urgency),
+        "tech": None,
+        "notes": []
+    }
+    audit_trail.append(
+        f"{user} raised #{ticket_id} at {datetime.now()}"
+    )
+    return ticket_id
 
 def assign_ticket(ticket_id, technician):
+    """Assign a technician to a ticket."""
     tickets[ticket_id]["tech"] = technician
 
 def add_note(ticket_id, note):
@@ -26,14 +37,16 @@ def add_note(ticket_id, note):
         print(f"Ticket #{ticket_id} not found.")
 
 def close_ticket(ticket_id, password):
+    """Close a ticket after verifying the admin password."""
     if password == ADMIN_PASSWORD:
         del tickets[ticket_id]
 
-def unresolvedHighPriority():
+def unresolved_high_priority():
+    """Return IDs of unassigned high-priority tickets."""
     result = []
-    for t in tickets:
-        if tickets[t]["priority"] >= 4 and tickets[t]["tech"] == None:
-            result.append(t)
+    for ticket_id, ticket in tickets.items():
+        if ticket["priority"] >= 4 and ticket["tech"] is None:
+            result.append(ticket_id)
     return result
 
 def ping_user_machine(hostname):
@@ -45,17 +58,18 @@ def ping_user_machine(hostname):
         return 1
 
 def save_tickets(file="tickets.json"):
-    f = open(file, "w")
-    f.write(json.dumps(tickets))
-    f.close()
+    """Save all tickets to a JSON file."""
+    with open(file, "w", encoding="utf-8") as output_file:
+        json.dump(tickets, output_file)
 
 def main():
+    """Demonstrate helpdesk ticket operations."""
     t1 = raise_ticket("anil", "printer", "5")
-    t2 = raise_ticket("meera", "wifi", "4")
+    raise_ticket("meera", "wifi", "4")
     t3 = raise_ticket("joe", "vpn", "-7")
     assign_ticket(t1, "Tech-Kiran")
     add_note(999, "Called user")
-    print("Unassigned high priority:", unresolvedHighPriority())
+    print("Unassigned high priority:", unresolved_high_priority())
     level = input("Urgency for a new laptop ticket (1-5, Enter for 3): ") or "3"
     raise_ticket("sana", "laptop", level)
     if ADMIN_PASSWORD:
