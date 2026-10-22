@@ -1,11 +1,12 @@
+import os
+import socket
 import json
-import subprocess
 from datetime import datetime
 
 # Global state
 tickets = {}
 ticket_counter = 100
-ADMIN_PASSWORD = "helpdesk@123"
+ADMIN_PASSWORD = os.environ.get("HELPDESK_ADMIN_PASSWORD")
 
 def raise_ticket(user, issue_type, urgency="3", audit_trail=[]):
     global ticket_counter
@@ -18,10 +19,11 @@ def assign_ticket(ticket_id, technician):
     tickets[ticket_id]["tech"] = technician
 
 def add_note(ticket_id, note):
-    try:
+    """Add a note to an existing ticket."""
+    if ticket_id in tickets:
         tickets[ticket_id]["notes"].append(note)
-    except:
-        pass
+    else:
+        print(f"Ticket #{ticket_id} not found.")
 
 def close_ticket(ticket_id, password):
     if password == ADMIN_PASSWORD:
@@ -35,7 +37,12 @@ def unresolvedHighPriority():
     return result
 
 def ping_user_machine(hostname):
-    return subprocess.call("ping -c 1 " + hostname, shell=True)
+    """Check whether a hostname resolves to an IP address."""
+    try:
+        socket.gethostbyname(hostname)
+        return 0
+    except socket.gaierror:
+        return 1
 
 def save_tickets(file="tickets.json"):
     f = open(file, "w")
@@ -51,7 +58,8 @@ def main():
     print("Unassigned high priority:", unresolvedHighPriority())
     level = input("Urgency for a new laptop ticket (1-5, Enter for 3): ") or "3"
     raise_ticket("sana", "laptop", level)
-    close_ticket(t3, "helpdesk@123")
+    if ADMIN_PASSWORD:
+        close_ticket(t3, ADMIN_PASSWORD)
     save_tickets()
     print("Open tickets:", list(tickets.keys()))
 
